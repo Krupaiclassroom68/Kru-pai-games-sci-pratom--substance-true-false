@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Kru Pai Classroom – เกมสารในชีวิตประจำวัน</title>
+<style>
+  :root{
+    --bg:#ffffff;--fg:#111;--primary:#e53935;--primary-2:#ffebee;--ok:#2e7d32;--bad:#c62828;--muted:#888;
+  }
+  html,body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,TH Sarabun New,Prompt,sans-serif;background:var(--bg);color:var(--fg);} 
+  .wrap{max-width:900px;margin:0 auto;padding:20px 16px 64px;}
+  header{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--primary-2);border-bottom:3px solid var(--primary);padding:14px 16px;border-radius:16px;margin-bottom:16px}
+  header h1{font-size:clamp(18px,4vw,28px);margin:0;line-height:1.2}
+  header .brand{font-weight:700;color:var(--primary)}
+  .card{background:#fff;border:1px solid #eee;border-radius:18px;box-shadow:0 6px 24px rgba(0,0,0,.06);padding:18px;margin:14px 0}
+  .start h2{margin:0 0 8px;font-size:clamp(18px,3.6vw,24px)}
+  .row{display:grid;grid-template-columns:1fr;gap:12px}
+  label{font-size:14px;color:#444}
+  input[type=text]{width:100%;padding:14px 16px;border-radius:14px;border:1px solid #ddd;font-size:16px}
+  button{cursor:pointer;border:none;padding:12px 18px;border-radius:14px;font-weight:700}
+  .btn-primary{background:var(--primary);color:#fff}
+  .btn-ghost{background:#f6f6f6}
+  .meta{display:flex;gap:10px;flex-wrap:wrap;font-size:14px;color:#444}
+  .chip{background:#f5f5f5;border-radius:999px;padding:6px 10px}
+  .hidden{display:none}
+  .qno{font-weight:700;color:var(--primary)}
+  .question{font-size:18px;line-height:1.45;margin-bottom:10px}
+  .opts{display:grid;gap:10px;margin-top:8px}
+  .opt{border:1px solid #e5e5e5;border-radius:14px;padding:12px 14px;display:flex;gap:12px;align-items:flex-start}
+  .opt input{margin-top:3px}
+  .opt.correct{border-color:var(--ok);background:#f3fff4}
+  .opt.wrong{border-color:var(--bad);background:#fff5f5}
+  .explain{font-size:14px;color:#333;margin-top:8px;border-left:3px solid #eee;padding-left:10px}
+  .statusbar{display:flex;gap:12px;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;border:1px solid #eee;border-radius:14px;padding:10px 12px;margin:10px 0;z-index:5}
+  .bar{flex:1;height:10px;background:#eee;border-radius:999px;overflow:hidden}
+  .bar>i{display:block;height:100%;width:0;background:var(--primary)}
+  .score{font-weight:800}
+  .timer{font-feature-settings:"tnum" 1, "lnum" 1; font-variant-numeric:tabular-nums}
+  .footer{text-align:center;color:#666;margin-top:24px}
+  .result h2{margin:8px 0 4px}
+  .badge{display:inline-block;background:var(--primary);color:#fff;padding:6px 10px;border-radius:999px;font-size:14px;font-weight:700}
+  .grid-2{display:grid;grid-template-columns:1fr;gap:12px}
+  @media(min-width:720px){.grid-2{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="brand">Kru Pai Classroom</div>
+      <h1>เกมสารในชีวิตประจำวัน – Speed Quiz</h1>
+    </div>
+    <div class="badge" id="phase">เริ่มต้น</div>
+  </header>
+
+  <!-- Start Screen -->
+  <section id="start" class="card start">
+    <h2>ยินดีต้อนรับ 🌟</h2>
+    <p>ใส่ <strong>ชื่อเล่น</strong> เพื่อเริ่มเล่น ระบบจะจับเวลา 10 วินาทีต่อข้อ ตอบเร็วให้ทันเวลา!</p>
+    <div class="row grid-2">
+      <div>
+        <label>ชื่อเล่น</label>
+        <input id="player" type="text" placeholder="เช่น Pancake"/>
+      </div>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn-primary" id="btnStart">เริ่มเล่น</button>
+    </div>
+  </section>
+
+  <!-- Quiz Screen -->
+  <section id="quiz" class="hidden">
+    <div class="statusbar">
+      <div class="meta"><span>ผู้เล่น: <strong id="who">-</strong></span> <span class="chip">ข้อ <span id="cur">1</span>/<span id="total">-</span></span> <span class="chip score">คะแนน <span id="pts">0</span></span></div>
+      <div class="meta"><span class="timer">⏳ <span id="left">00</span>s</span></div>
+    </div>
+    <div id="qArea" class="card"></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button id="btnPrev" class="btn-ghost">ย้อนกลับ</button>
+      <button id="btnNext" class="btn-primary">ข้อถัดไป ▶</button>
+      <button id="btnFinish" class="btn-ghost hidden">จบเกม</button>
+    </div>
+  </section>
+
+  <!-- Result Screen -->
+  <section id="result" class="hidden card result">
+    <h2>สรุปคะแนน 🎉</h2>
+    <p><strong id="sumName"></strong> ได้คะแนน <strong id="sumScore">0</strong> / <span id="sumTotal">0</span></p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 6px">
+      <button class="btn-primary" id="btnReview">ดูเฉลย</button>
+      <button class="btn-ghost" id="btnRestart">กลับหน้าแรก</button>
+    </div>
+    <div id="review" class="hidden"></div>
+  </section>
+
+  <div class="footer">© Kru Pai Classroom · Speed Quiz 40 ข้อ</div>
+</div>
+
+<script>
+const CHOICES = ["สารละลาย","คอลลอยด์","สารแขวนลอย"];
+const DATA40 = [
+  {name:"น้ำเกลือ", answer:0, note:"เกลือละลายในน้ำ"},
+  {name:"น้ำตาลละลายน้ำ", answer:0, note:"น้ำหวานใส"},
+  {name:"น้ำส้มสายชู", answer:0, note:"กรดน้ำส้มในน้ำ"},
+  {name:"น้ำทะเล", answer:0, note:"เกลือหลายชนิดละลาย"},
+  {name:"อากาศ", answer:0, note:"แก๊สผสมเนื้อเดียว"},
+  {name:"น้ำอัดลม (ก่อนเปิดฝา)", answer:0, note:"CO₂ ละลายในของเหลว"},
+  {name:"แอลกอฮอล์ผสมน้ำ", answer:0, note:"เอทานอล+น้ำ"},
+  {name:"ทองเหลือง", answer:0, note:"ของแข็งละลายในของแข็ง (โลหะผสม)"},
+  {name:"บรอนซ์", answer:0, note:"ทองแดง+ดีบุก เนื้อเดียว"},
+  {name:"น้ำชาใส (กรองกากออก)", answer:0, note:"สารละลายน้ำชา"},
+  {name:"น้ำเชื่อมยา", answer:0, note:"น้ำตาล/ตัวยาละลาย"},
+  {name:"สารละลายเกลือแร่ (ORS)", answer:0, note:"อิเล็กโทรไลต์ในน้ำ"},
+  {name:"น้ำปูนใส", answer:0, note:"Ca(OH)₂ ละลายในน้ำ (ใส)"},
+  {name:"น้ำนม", answer:1, note:"อิมัลชัน ไขมันในน้ำ"},
+  {name:"น้ำนมถั่วเหลือง", answer:1, note:"โปรตีน/ไขมันกระจายตัว"},
+  {name:"มายองเนส", answer:1, note:"อิมัลชัน น้ำมันในน้ำ"},
+  {name:"เนย/มาการีน", answer:1, note:"น้ำในน้ำมัน (W/O)"},
+  {name:"ครีม/โลชั่นทาผิว", answer:1, note:"อิมัลชันครีม"},
+  {name:"ยาสระผม", answer:1, note:"ไมเซลล์ของสารลดแรงตึงผิว"},
+  {name:"น้ำสบู่", answer:1, note:"ไมเซลล์คอลลอยด์"},
+  {name:"แป้งข้าวโพดในน้ำ (สารละลายแป้ง)", answer:1, note:"sol ของอนุภาคแป้ง"},
+  {name:"เจลาตินละลายน้ำ", answer:1, note:"เกิดเจล/sol"},
+  {name:"เจลว่านหางจระเข้", answer:1, note:"เจลของโพลิเมอร์ธรรมชาติ"},
+  {name:"โฟมโกนหนวด", answer:1, note:"แก๊สในของเหลว (โฟม)"},
+  {name:"ควันธูป", answer:1, note:"ของแข็งในแก๊ส (aerosol)"},
+  {name:"หมอก/ฝ้า", answer:1, note:"ของเหลวในแก๊ส (aerosol)"},
+  {name:"หมึกจีน", answer:1, note:"คาร์บอนคอลลอยด์ในน้ำ"},
+  {name:"น้ำโคลน", answer:2, note:"ดินตะกอนตกได้"},
+  {name:"ทรายผสมน้ำ", answer:2, note:"เม็ดใหญ่ ตกตะกอน"},
+  {name:"ผงชอล์กในน้ำ", answer:2, note:"กรองออกได้"},
+  {name:"ผงถ่านในน้ำ", answer:2, note:"ตกตะกอน/กรองได้"},
+  {name:"ดินสอพองในน้ำ", answer:2, note:"ตะกอนขุ่น"},
+  {name:"น้ำส้มคั้นมีเยื่อ", answer:2, note:"เนื้อผลไม้ลอย/ตก"},
+  {name:"โกโก้เย็นใส่ผง (คนไม่หมด)", answer:2, note:"ผงแขวนลอย"},
+  {name:"ยาน้ำแขวนตะกอน (suspension)", answer:2, note:"ต้องเขย่าก่อนใช้"},
+  {name:"สีน้ำ/สีโปสเตอร์", answer:2, note:"รงควัตถุแขวนลอย"},
+  {name:"น้ำแป้งดิบข้น (slurry)", answer:2, note:"อนุภาคใหญ่ ตกได้"},
+  {name:"สมูทตี้/น้ำผลไม้ปั่น", answer:2, note:"ชิ้นเนื้อผลไม้แขวนลอย"},
+  {name:"ฝุ่นหยาบในอากาศ", answer:2, note:"อนุภาคใหญ่ ตกลงได้"},
+  {name:"ปูนแดงผสมน้ำ (ขุ่น)", answer:2, note:"มีตะกอนปูนแขวนลอย"}
+];
+
+// Shuffle questions to avoid category grouping
+(function(){
+  try{
+    // Fisher–Yates
+    for(let i = DATA40.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [DATA40[i], DATA40[j]] = [DATA40[j], DATA40[i]];
+    }
+  }catch(e){}
+})();
+
+
+const QUESTIONS = DATA40.map((d,i)=>({
+  no:i+1,
+  q:`สารต่อไปนี้จัดเป็นชนิดใด: ${d.name}`,
+  choices:CHOICES,
+  answer:d.answer,
+  explain:d.note
+}));
+
+const el = id=>document.getElementById(id);
+const start = el('start');
+const quiz = el('quiz');
+const result = el('result');
+const phase = el('phase');
+
+el('total').textContent = QUESTIONS.length;
+
+let state = {i:0, score:0, secs:10, timer:null, remain:10, name:"-", answers:[]};
+
+function fmt(n){return String(n).padStart(2,'0')}
+
+function renderQ(){
+  const item = QUESTIONS[state.i];
+  el('cur').textContent = state.i+1; 
+  const html = `
+    <div class="qno">ข้อ ${state.i+1}</div>
+    <div class="question">${item.q}</div>
+    <div class="opts">
+      ${item.choices.map((c,idx)=>{
+        return `<label class="opt"><input type="radio" name="opt" value="${idx}"> <div>${idx+1}. ${c}</div></label>`
+      }).join('')}
+    </div>
+    <div class="explain hidden" id="exp">${item.explain||''}</div>
+  `;
+  el('qArea').innerHTML = html;
+  el('left').textContent = fmt(state.secs);
+  const bar = document.createElement('div');
+  bar.className = 'bar';
+  const fill = document.createElement('i');
+  bar.appendChild(fill);
+  el('qArea').prepend(bar);
+  let t = state.secs, total = state.secs;
+  clearInterval(state.timer);
+  state.timer = setInterval(()=>{
+    t--; state.remain = t; el('left').textContent = fmt(Math.max(0,t));
+    fill.style.width = `${100*(1 - (t/total))}%`;
+    if(t<=0){ clearInterval(state.timer); lockAndCheck(null); }
+  },1000);
+  el('qArea').querySelectorAll('input[name="opt"]').forEach(r=>{
+    r.addEventListener('change',()=> lockAndCheck(parseInt(r.value,10)) )
+  });
+  el('btnPrev').disabled = state.i===0;
+  el('btnNext').classList.toggle('hidden', state.i===QUESTIONS.length-1);
+  el('btnFinish').classList.toggle('hidden', state.i!==QUESTIONS.length-1);
+}
+
+function lockAndCheck(selected){
+  clearInterval(state.timer);
+  const item = QUESTIONS[state.i];
+  const list = el('qArea').querySelectorAll('.opt');
+  list.forEach((row,idx)=>{
+    row.classList.remove('correct','wrong');
+    const inp = row.querySelector('input');
+    if(inp) inp.disabled = true;
+    if(idx===item.answer) row.classList.add('correct');
+    if(selected!==null){ if(idx===selected && selected!==item.answer) row.classList.add('wrong'); }
+  });
+  const ok = selected===item.answer; 
+  if(selected!==null && ok){ state.score++; }
+  state.answers[state.i] = {sel:selected, ok};
+  el('pts').textContent = state.score;
+  const exp = el('exp');
+  if(exp && (item.explain||'').length){ exp.classList.remove('hidden'); }
+}
+
+el('btnStart').onclick = ()=>{
+  state.name = (el('player').value||'นักเรียน');
+  state.secs = 10;
+  state.i=0; state.score=0; state.answers=[];
+  el('who').textContent = state.name; el('pts').textContent = '0'; el('total').textContent = QUESTIONS.length;
+  start.classList.add('hidden'); quiz.classList.remove('hidden'); result.classList.add('hidden'); phase.textContent='กำลังทำแบบทดสอบ';
+  renderQ();
+};
+
+el('btnNext').onclick = ()=>{ if(state.i<QUESTIONS.length-1){ state.i++; renderQ(); } };
+
+el('btnPrev').onclick = ()=>{ if(state.i>0){ state.i--; renderQ(); } };
+</script>
+</body>
+</html>
